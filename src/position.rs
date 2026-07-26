@@ -50,9 +50,14 @@ impl Position {
         Self { board }
     }
 
-    pub fn draw(&self, d: &mut RaylibDrawHandle) {
+    pub fn draw(&self, d: &mut RaylibDrawHandle, dragging_square: Option<(usize, usize)>) {
     for row in 0..8 {
         for col in 0..8 {
+            // If it's the dragging piece, do not draw
+            if dragging_square == Some((row, col)) {
+                continue;
+            }
+
             if let Some(piece) = &self.board[row][col] {
                 draw_piece(piece, row as i32, col as i32, d);
             }
@@ -71,6 +76,6 @@ impl Position {
         self.board[from_row][from_col] = None;
         self.board[to_row][to_col] = piece;
     }
-    
+
 }
 
