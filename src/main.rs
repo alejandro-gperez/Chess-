@@ -27,6 +27,8 @@ fn main(){
 
     let mut dragging: Option<DraggingPiece> = None;
 
+    let mut legal_moves: Vec<(usize, usize)> = Vec::new();
+
 while !rl.window_should_close() {
 
     let mouse = rl.get_mouse_position();
@@ -54,21 +56,21 @@ while !rl.window_should_close() {
                 offset_y,
             });
 
+            legal_moves = movement::legal_moves(
+            &piece,
+            &position,
+            row,
+            column,
+            );
+
         println!("Agarré una pieza");
     }
 }
 
-   // Drag stops
+  // Drag stops
 if rl.is_mouse_button_released(MouseButton::MOUSE_BUTTON_LEFT) {
 
     if let Some(drag) = dragging.take() {
-
-        let legal_moves = movement::legal_moves(
-            &drag.piece,
-            &position,
-            drag.row,
-            drag.col,
-        );
 
         if row < 8 && column < 8 && legal_moves.contains(&(row, column)) {
 
@@ -80,12 +82,15 @@ if rl.is_mouse_button_released(MouseButton::MOUSE_BUTTON_LEFT) {
             );
         }
     }
+
+    legal_moves.clear();
 }
-    //resetting
-    if rl.is_key_pressed(KeyboardKey::KEY_R) {
+
+// resetting
+if rl.is_key_pressed(KeyboardKey::KEY_R) {
     position = position::Position::new();
     dragging = None;
-    }
+}
 
     let dragging_square = dragging
         .as_ref()
@@ -96,6 +101,21 @@ if rl.is_mouse_button_released(MouseButton::MOUSE_BUTTON_LEFT) {
     d.clear_background(Color::WHITE);
 
     board::draw(&mut d);
+
+    for &(row, col) in &legal_moves {
+
+    let x = col as i32 * 100 + 50;
+    let y = row as i32 * 100 + 50;
+
+    d.draw_text(
+        "*",
+        x - 8,
+        y - 20,
+        40,
+        Color::GREEN,
+        );
+    }
+
     position.draw(&mut d, dragging_square, &textures);
     if let Some(drag) = &dragging {
 
