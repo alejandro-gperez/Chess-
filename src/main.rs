@@ -5,6 +5,7 @@ mod board;
 mod pieces;
 mod position;
 mod textures;
+mod movement;
 
 struct DraggingPiece {
     row: usize,
@@ -36,7 +37,7 @@ while !rl.window_should_close() {
     // Drag begins
     if rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) {
 
-        if position.board[row][column].is_some() {
+        if row < 8 && column < 8 && position.board[row][column].is_some() {
             let piece = position.board[row][column].unwrap();
 
             let piece_x = column as f32 * 100.0;
@@ -57,16 +58,29 @@ while !rl.window_should_close() {
     }
 }
 
-    // Drag stops
-    if rl.is_mouse_button_released(MouseButton::MOUSE_BUTTON_LEFT) {
+   // Drag stops
+if rl.is_mouse_button_released(MouseButton::MOUSE_BUTTON_LEFT) {
 
-        if let Some(drag) = dragging {
-            position.move_piece(drag.row, drag.col, row, column);
-            dragging = None;
-            println!("Solté la pieza");
+    if let Some(drag) = dragging.take() {
+
+        let legal_moves = movement::legal_moves(
+            &drag.piece,
+            &position,
+            drag.row,
+            drag.col,
+        );
+
+        if row < 8 && column < 8 && legal_moves.contains(&(row, column)) {
+
+            position.move_piece(
+                drag.row,
+                drag.col,
+                row,
+                column,
+            );
         }
     }
-
+}
     //resetting
     if rl.is_key_pressed(KeyboardKey::KEY_R) {
     position = position::Position::new();

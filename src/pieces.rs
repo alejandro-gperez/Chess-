@@ -7,7 +7,7 @@ use crate::textures::PieceTextures;
 PIECE DEFINITION
 ==================
 */
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum PieceType{
     King,
     Queen,
@@ -16,11 +16,12 @@ pub enum PieceType{
     Rook,
     Pawn,
 }
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum PieceColor{
     White,
     Black,
 }
+
 #[derive(Copy, Clone)]
 pub struct Piece{
     pub piece_type: PieceType,
