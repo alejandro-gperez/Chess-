@@ -59,5 +59,18 @@ impl Position {
         }
     }
 }
+
+    pub fn move_piece(
+        &mut self,
+        from_row: usize,
+        from_col: usize,
+        to_row: usize,
+        to_col: usize,
+    ) {
+        let piece = self.board[from_row][from_col];
+        self.board[from_row][from_col] = None;
+        self.board[to_row][to_col] = piece;
+    }
+    
 }
 
