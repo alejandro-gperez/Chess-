@@ -4,6 +4,15 @@ use crate::pieces::Piece;
 mod board;
 mod pieces;
 mod position;
+mod textures;
+
+struct DraggingPiece {
+    row: usize,
+    col: usize,
+    piece: Piece,
+    offset_x: f32,
+    offset_y: f32,
+}
 
 fn main(){
     let (mut rl, thread) = raylib::init() //Window config, rl is raylib's handler and the therad is a 'key' to let us draw.
@@ -13,7 +22,9 @@ fn main(){
 
     let mut position = position::Position::new();
 
-let mut dragging: Option<(usize, usize, Piece)> = None;
+    let textures = textures::PieceTextures::new(&mut rl, &thread);
+
+    let mut dragging: Option<DraggingPiece> = None;
 
 while !rl.window_should_close() {
 
@@ -27,16 +38,30 @@ while !rl.window_should_close() {
 
         if position.board[row][column].is_some() {
             let piece = position.board[row][column].unwrap();
-            dragging = Some((row, column, piece));
-            println!("Agarré una pieza");
-        }
+
+            let piece_x = column as f32 * 100.0;
+            let piece_y = row as f32 * 100.0;
+
+            let offset_x = mouse.x - piece_x;
+            let offset_y = mouse.y - piece_y;
+
+            dragging = Some(DraggingPiece {
+                row,
+                col: column,
+                piece,
+                offset_x,
+                offset_y,
+            });
+
+        println!("Agarré una pieza");
     }
+}
 
     // Drag stops
     if rl.is_mouse_button_released(MouseButton::MOUSE_BUTTON_LEFT) {
 
-        if let Some((from_row, from_col, _)) = dragging {
-            position.move_piece(from_row, from_col, row, column);
+        if let Some(drag) = dragging {
+            position.move_piece(drag.row, drag.col, row, column);
             dragging = None;
             println!("Solté la pieza");
         }
@@ -48,22 +73,29 @@ while !rl.window_should_close() {
     dragging = None;
     }
 
-    let dragging_square = dragging.map(|(row, column, _)| (row, column));
+    let dragging_square = dragging
+        .as_ref()
+        .map(|drag| (drag.row, drag.col));
 
     let mut d = rl.begin_drawing(&thread);
 
     d.clear_background(Color::WHITE);
 
     board::draw(&mut d);
-    position.draw(&mut d, dragging_square);
-    if let Some((_, _, piece)) = dragging {
-        pieces::draw_piece_pixels(
-            &piece,
-            mouse.x as i32,
-            mouse.y as i32,
-            &mut d,
-        );
-        }
+    position.draw(&mut d, dragging_square, &textures);
+    if let Some(drag) = &dragging {
 
+        let draw_x = mouse.x - drag.offset_x;
+        let draw_y = mouse.y - drag.offset_y;
+
+        pieces::draw_piece_pixels(
+            &drag.piece,
+            draw_x as i32,
+            draw_y as i32,
+            &mut d,
+            &textures,
+        );
     }
+
+ }
 }

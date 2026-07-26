@@ -1,6 +1,6 @@
 use raylib::prelude::*;
 
-use crate::pieces::{Piece, PieceColor, PieceType, draw_piece};
+use crate::{pieces::{Piece, PieceColor, PieceType, draw_piece}, textures::PieceTextures};
 
 pub struct Position {
     pub board: [[Option<Piece>; 8]; 8], //In the board where we are saving the posicition, there MIGHT be a Piece. In the 8x8 matrix.
@@ -50,7 +50,7 @@ impl Position {
         Self { board }
     }
 
-    pub fn draw(&self, d: &mut RaylibDrawHandle, dragging_square: Option<(usize, usize)>) {
+    pub fn draw(&self, d: &mut RaylibDrawHandle, dragging_square: Option<(usize, usize)>, textures: &PieceTextures) {
     for row in 0..8 {
         for col in 0..8 {
             // If it's the dragging piece, do not draw
@@ -59,7 +59,7 @@ impl Position {
             }
 
             if let Some(piece) = &self.board[row][col] {
-                draw_piece(piece, row as i32, col as i32, d);
+                draw_piece(piece, row as i32, col as i32, textures, d);
             }
         }
     }
