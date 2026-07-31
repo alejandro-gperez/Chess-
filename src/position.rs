@@ -4,6 +4,15 @@ use crate::{pieces::{Piece, PieceColor, PieceType, draw_piece}, textures::PieceT
 
 pub struct Position {
     pub board: [[Option<Piece>; 8]; 8], //In the board where we are saving the posicition, there MIGHT be a Piece. In the 8x8 matrix.
+    
+    pub white_king_moved: bool,         ////////////// //////////////
+    pub black_king_moved: bool,          ////////////// //////////////
+
+    pub white_left_rook_moved: bool,  //Used for castling mechanic
+    pub white_right_rook_moved: bool,    ////////////// //////////////
+
+    pub black_left_rook_moved: bool,        ////////////// //////////////
+    pub black_right_rook_moved: bool,  ////////////// //////////////
 }
 
 impl Position {
@@ -47,7 +56,15 @@ impl Position {
             });
         }
 
-        Self { board }
+        Self {
+             board,
+             white_king_moved: false,
+             black_king_moved: false,
+             white_left_rook_moved: false,
+             white_right_rook_moved: false,
+             black_left_rook_moved: false,
+             black_right_rook_moved: false,
+         }
     }
 
     pub fn draw(&self, d: &mut RaylibDrawHandle, dragging_square: Option<(usize, usize)>, textures: &PieceTextures) {
@@ -73,6 +90,45 @@ impl Position {
         to_col: usize,
     ) {
         let piece = self.board[from_row][from_col];
+
+        if let Some(piece) = piece {
+
+        match (piece.piece_color, piece.piece_type) {
+
+            (PieceColor::White, PieceType::King) => {
+                self.white_king_moved = true;
+            }
+
+            (PieceColor::Black, PieceType::King) => {
+                self.black_king_moved = true;
+            }
+
+            (PieceColor::White, PieceType::Rook) => {
+
+                if from_row == 7 && from_col == 0 {
+                    self.white_left_rook_moved = true;                  //all this to change the flag to true if either king or rook moves.
+                }
+
+                if from_row == 7 && from_col == 7 {
+                    self.white_right_rook_moved = true;
+                }
+            }
+
+            (PieceColor::Black, PieceType::Rook) => {
+
+                if from_row == 0 && from_col == 0 {
+                    self.black_left_rook_moved = true;
+                }
+
+                if from_row == 0 && from_col == 7 {
+                    self.black_right_rook_moved = true;
+                }
+            }
+
+            _ => {}
+        }
+    }
+
         self.board[from_row][from_col] = None;
         self.board[to_row][to_col] = piece;
     }
