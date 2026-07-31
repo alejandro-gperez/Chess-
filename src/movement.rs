@@ -291,6 +291,13 @@ fn castling_moves(
 
             // Short castle (O-O)
             if !position.white_right_rook_moved
+                && matches!(
+                    position.board[7][7],
+                    Some(Piece {
+                        piece_type: PieceType::Rook,
+                        piece_color: PieceColor::White,
+                    })
+                )
                 && position.board[7][5].is_none() // f1
                 && position.board[7][6].is_none()
             // g1
@@ -300,6 +307,13 @@ fn castling_moves(
 
             // Long castle (O-O-O)
             if !position.white_left_rook_moved
+                && matches!(
+                    position.board[7][0],
+                    Some(Piece {
+                        piece_type: PieceType::Rook,
+                        piece_color: PieceColor::White,
+                    })
+                )
                 && position.board[7][1].is_none() // b1
                 && position.board[7][2].is_none() // c1
                 && position.board[7][3].is_none()
@@ -322,6 +336,13 @@ fn castling_moves(
 
             // Short castle (O-O)
             if !position.black_right_rook_moved
+                && matches!(
+                    position.board[0][7],
+                    Some(Piece {
+                        piece_type: PieceType::Rook,
+                        piece_color: PieceColor::Black,
+                    })
+                )
                 && position.board[0][5].is_none() // f8
                 && position.board[0][6].is_none()
             // g8
@@ -331,6 +352,13 @@ fn castling_moves(
 
             // Long castle (O-O-O)
             if !position.black_left_rook_moved
+                && matches!(
+                    position.board[0][0],
+                    Some(Piece {
+                        piece_type: PieceType::Rook,
+                        piece_color: PieceColor::Black,
+                    })
+                )
                 && position.board[0][1].is_none() // b8
                 && position.board[0][2].is_none() // c8
                 && position.board[0][3].is_none()
