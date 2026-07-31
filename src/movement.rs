@@ -259,10 +259,15 @@ fn pawn_moves(piece: &Piece, position: &Position, row: usize, col: usize) -> Vec
             continue;
         }
 
+        // Normal capture
         if let Some(other_piece) = position.board[r as usize][c as usize] {
             if is_enemy(piece, &other_piece) {
                 moves.push((r as usize, c as usize));
             }
+        }
+        // En passant
+        else if position.en_passant_square == Some((r as usize, c as usize)) {
+            moves.push((r as usize, c as usize));
         }
     }
 

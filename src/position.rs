@@ -16,6 +16,8 @@ pub struct Position {
 
     pub black_left_rook_moved: bool,  ////////////// //////////////
     pub black_right_rook_moved: bool, ////////////// //////////////
+
+    pub en_passant_square: Option<(usize, usize)>, //Assings the tile of a possible en passant capture.
 }
 
 impl Position {
@@ -67,6 +69,7 @@ impl Position {
             white_right_rook_moved: false,
             black_left_rook_moved: false,
             black_right_rook_moved: false,
+            en_passant_square: None,
         }
     }
 
@@ -94,6 +97,38 @@ impl Position {
         let piece = self.board[from_row][from_col];
 
         if let Some(piece) = piece {
+            // En passant capture
+            if piece.piece_type == PieceType::Pawn {
+                if let Some((ep_row, ep_col)) = self.en_passant_square {
+                    if to_row == ep_row && to_col == ep_col {
+                        match piece.piece_color {
+                            PieceColor::White => {
+                                // Remove the black pawn behind the destination square
+                                self.board[to_row + 1][to_col] = None;
+                            }
+
+                            PieceColor::Black => {
+                                // Remove the white pawn behind the destination square
+                                self.board[to_row - 1][to_col] = None;
+                            }
+                        }
+                    }
+                }
+            }
+            // Reset en passant every move.
+            self.en_passant_square = None;
+
+            if piece.piece_type == PieceType::Pawn {
+                // White pawn double move
+                if from_row == 6 && to_row == 4 {
+                    self.en_passant_square = Some((5, from_col));
+                }
+
+                // Black pawn double move
+                if from_row == 1 && to_row == 3 {
+                    self.en_passant_square = Some((2, from_col));
+                }
+            }
             match (piece.piece_color, piece.piece_type) {
                 (PieceColor::White, PieceType::King) => {
                     self.white_king_moved = true;
