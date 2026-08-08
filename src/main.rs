@@ -2,6 +2,7 @@ use crate::pieces::{Piece, PieceType};
 use raylib::prelude::*;
 
 mod board;
+mod game;
 mod movement;
 mod pieces;
 mod position;
@@ -21,7 +22,7 @@ fn main() {
         .title("Chess")
         .build(); //Builds window
 
-    let mut position = position::Position::new();
+    let mut game = game::Game::new();
 
     let textures = textures::PieceTextures::new(&mut rl, &thread);
 
@@ -36,27 +37,27 @@ fn main() {
         let column = (mouse.x / 100.0) as usize;
 
         //Promoting mechanic by selecting piece with keys.
-        if let Some(_) = position.promotion {
+        if let Some(_) = game.position.promotion {
             if rl.is_key_pressed(KeyboardKey::KEY_ONE) {
-                position.promote(PieceType::Queen);
+                game.position.promote(PieceType::Queen);
                 legal_moves.clear();
                 dragging = None;
             }
 
             if rl.is_key_pressed(KeyboardKey::KEY_TWO) {
-                position.promote(PieceType::Knight);
+                game.position.promote(PieceType::Knight);
                 legal_moves.clear();
                 dragging = None;
             }
 
             if rl.is_key_pressed(KeyboardKey::KEY_THREE) {
-                position.promote(PieceType::Bishop);
+                game.position.promote(PieceType::Bishop);
                 legal_moves.clear();
                 dragging = None;
             }
 
             if rl.is_key_pressed(KeyboardKey::KEY_FOUR) {
-                position.promote(PieceType::Rook);
+                game.position.promote(PieceType::Rook);
                 legal_moves.clear();
                 dragging = None;
             }
@@ -65,26 +66,29 @@ fn main() {
 
             // Drag begins
             if rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) {
-                if row < 8 && column < 8 && position.board[row][column].is_some() {
-                    let piece = position.board[row][column].unwrap();
+                if row < 8 && column < 8 {
+                    if let Some(piece) = game.position.board[row][column] {
+                        if game.can_select(piece.piece_color) {
+                            let piece_x = column as f32 * 100.0;
+                            let piece_y = row as f32 * 100.0;
 
-                    let piece_x = column as f32 * 100.0;
-                    let piece_y = row as f32 * 100.0;
+                            let offset_x = mouse.x - piece_x;
+                            let offset_y = mouse.y - piece_y;
 
-                    let offset_x = mouse.x - piece_x;
-                    let offset_y = mouse.y - piece_y;
+                            dragging = Some(DraggingPiece {
+                                row,
+                                col: column,
+                                piece,
+                                offset_x,
+                                offset_y,
+                            });
 
-                    dragging = Some(DraggingPiece {
-                        row,
-                        col: column,
-                        piece,
-                        offset_x,
-                        offset_y,
-                    });
+                            legal_moves =
+                                movement::legal_moves(&piece, &game.position, row, column);
 
-                    legal_moves = movement::legal_moves(&piece, &position, row, column);
-
-                    println!("Agarré una pieza");
+                            println!("Agarré una pieza");
+                        }
+                    }
                 }
             }
 
@@ -92,7 +96,11 @@ fn main() {
             if rl.is_mouse_button_released(MouseButton::MOUSE_BUTTON_LEFT) {
                 if let Some(drag) = dragging.take() {
                     if row < 8 && column < 8 && legal_moves.contains(&(row, column)) {
-                        position.move_piece(drag.row, drag.col, row, column);
+                        game.move_piece(drag.row, drag.col, row, column);
+
+                        if game.should_switch_turns() {
+                            game.next_turn();
+                        }
                     }
                 }
 
@@ -102,7 +110,7 @@ fn main() {
 
         // resetting
         if rl.is_key_pressed(KeyboardKey::KEY_R) {
-            position = position::Position::new();
+            game = game::Game::new();
             dragging = None;
         }
 
@@ -121,9 +129,9 @@ fn main() {
             d.draw_text("*", x - 8, y - 20, 40, Color::GREEN);
         }
 
-        position.draw(&mut d, dragging_square, &textures);
+        game.position.draw(&mut d, dragging_square, &textures);
 
-        if position.promotion.is_some() {
+        if game.position.promotion.is_some() {
             d.draw_text(
                 "1: Queen  2: Knight  3: Bishop  4: Rook",
                 80,
