@@ -1,11 +1,11 @@
+use crate::pieces::{Piece, PieceType};
 use raylib::prelude::*;
-use crate::pieces::Piece;
 
 mod board;
+mod movement;
 mod pieces;
 mod position;
 mod textures;
-mod movement;
 
 struct DraggingPiece {
     row: usize,
@@ -15,11 +15,11 @@ struct DraggingPiece {
     offset_y: f32,
 }
 
-fn main(){
+fn main() {
     let (mut rl, thread) = raylib::init() //Window config, rl is raylib's handler and the therad is a 'key' to let us draw.
-    .size(800, 800)
-    .title("Chess")
-    .build(); //Builds window
+        .size(800, 800)
+        .title("Chess")
+        .build(); //Builds window
 
     let mut position = position::Position::new();
 
@@ -29,107 +29,115 @@ fn main(){
 
     let mut legal_moves: Vec<(usize, usize)> = Vec::new();
 
-while !rl.window_should_close() {
+    while !rl.window_should_close() {
+        let mouse = rl.get_mouse_position();
 
-    let mouse = rl.get_mouse_position();
+        let row = (mouse.y / 100.0) as usize;
+        let column = (mouse.x / 100.0) as usize;
 
-    let row = (mouse.y / 100.0) as usize;
-    let column = (mouse.x / 100.0) as usize;
+        //Promoting mechanic by selecting piece with keys.
+        if let Some(_) = position.promotion {
+            if rl.is_key_pressed(KeyboardKey::KEY_ONE) {
+                position.promote(PieceType::Queen);
+                legal_moves.clear();
+                dragging = None;
+            }
 
-    // Drag begins
-    if rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) {
+            if rl.is_key_pressed(KeyboardKey::KEY_TWO) {
+                position.promote(PieceType::Knight);
+                legal_moves.clear();
+                dragging = None;
+            }
 
-        if row < 8 && column < 8 && position.board[row][column].is_some() {
-            let piece = position.board[row][column].unwrap();
+            if rl.is_key_pressed(KeyboardKey::KEY_THREE) {
+                position.promote(PieceType::Bishop);
+                legal_moves.clear();
+                dragging = None;
+            }
 
-            let piece_x = column as f32 * 100.0;
-            let piece_y = row as f32 * 100.0;
+            if rl.is_key_pressed(KeyboardKey::KEY_FOUR) {
+                position.promote(PieceType::Rook);
+                legal_moves.clear();
+                dragging = None;
+            }
+        } else {
+            //If there's no pawn that can be promoted. if there is, game stops and checks if any of the keys 1-4 has been pressed.
 
-            let offset_x = mouse.x - piece_x;
-            let offset_y = mouse.y - piece_y;
+            // Drag begins
+            if rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) {
+                if row < 8 && column < 8 && position.board[row][column].is_some() {
+                    let piece = position.board[row][column].unwrap();
 
-            dragging = Some(DraggingPiece {
-                row,
-                col: column,
-                piece,
-                offset_x,
-                offset_y,
-            });
+                    let piece_x = column as f32 * 100.0;
+                    let piece_y = row as f32 * 100.0;
 
-            legal_moves = movement::legal_moves(
-            &piece,
-            &position,
-            row,
-            column,
-            );
+                    let offset_x = mouse.x - piece_x;
+                    let offset_y = mouse.y - piece_y;
 
-        println!("Agarré una pieza");
-    }
-}
+                    dragging = Some(DraggingPiece {
+                        row,
+                        col: column,
+                        piece,
+                        offset_x,
+                        offset_y,
+                    });
 
-  // Drag stops
-if rl.is_mouse_button_released(MouseButton::MOUSE_BUTTON_LEFT) {
+                    legal_moves = movement::legal_moves(&piece, &position, row, column);
 
-    if let Some(drag) = dragging.take() {
+                    println!("Agarré una pieza");
+                }
+            }
 
-        if row < 8 && column < 8 && legal_moves.contains(&(row, column)) {
+            // Drag stops
+            if rl.is_mouse_button_released(MouseButton::MOUSE_BUTTON_LEFT) {
+                if let Some(drag) = dragging.take() {
+                    if row < 8 && column < 8 && legal_moves.contains(&(row, column)) {
+                        position.move_piece(drag.row, drag.col, row, column);
+                    }
+                }
 
-            position.move_piece(
-                drag.row,
-                drag.col,
-                row,
-                column,
+                legal_moves.clear();
+            }
+        }
+
+        // resetting
+        if rl.is_key_pressed(KeyboardKey::KEY_R) {
+            position = position::Position::new();
+            dragging = None;
+        }
+
+        let dragging_square = dragging.as_ref().map(|drag| (drag.row, drag.col));
+
+        let mut d = rl.begin_drawing(&thread);
+
+        d.clear_background(Color::WHITE);
+
+        board::draw(&mut d);
+
+        for &(row, col) in &legal_moves {
+            let x = col as i32 * 100 + 50;
+            let y = row as i32 * 100 + 50;
+
+            d.draw_text("*", x - 8, y - 20, 40, Color::GREEN);
+        }
+
+        position.draw(&mut d, dragging_square, &textures);
+
+        if position.promotion.is_some() {
+            d.draw_text(
+                "1: Queen  2: Knight  3: Bishop  4: Rook",
+                80,
+                10,
+                24,
+                Color::RED,
             );
         }
+
+        if let Some(drag) = &dragging {
+            let draw_x = mouse.x - drag.offset_x;
+            let draw_y = mouse.y - drag.offset_y;
+
+            pieces::draw_piece_pixels(&drag.piece, draw_x as i32, draw_y as i32, &mut d, &textures);
+        }
     }
-
-    legal_moves.clear();
-}
-
-// resetting
-if rl.is_key_pressed(KeyboardKey::KEY_R) {
-    position = position::Position::new();
-    dragging = None;
-}
-
-    let dragging_square = dragging
-        .as_ref()
-        .map(|drag| (drag.row, drag.col));
-
-    let mut d = rl.begin_drawing(&thread);
-
-    d.clear_background(Color::WHITE);
-
-    board::draw(&mut d);
-
-    for &(row, col) in &legal_moves {
-
-    let x = col as i32 * 100 + 50;
-    let y = row as i32 * 100 + 50;
-
-    d.draw_text(
-        "*",
-        x - 8,
-        y - 20,
-        40,
-        Color::GREEN,
-        );
-    }
-
-    position.draw(&mut d, dragging_square, &textures);
-    if let Some(drag) = &dragging {
-
-        let draw_x = mouse.x - drag.offset_x;
-        let draw_y = mouse.y - drag.offset_y;
-
-        pieces::draw_piece_pixels(
-            &drag.piece,
-            draw_x as i32,
-            draw_y as i32,
-            &mut d,
-            &textures,
-        );
-    }
-
- }
 }

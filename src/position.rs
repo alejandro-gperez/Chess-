@@ -18,6 +18,8 @@ pub struct Position {
     pub black_right_rook_moved: bool, ////////////// //////////////
 
     pub en_passant_square: Option<(usize, usize)>, //Assings the tile of a possible en passant capture.
+
+    pub promotion: Option<(usize, usize)>, //Checks coordinates (x, y) for a pawn that might be promoted.
 }
 
 impl Position {
@@ -70,6 +72,7 @@ impl Position {
             black_left_rook_moved: false,
             black_right_rook_moved: false,
             en_passant_square: None,
+            promotion: None,
         }
     }
 
@@ -115,20 +118,7 @@ impl Position {
                     }
                 }
             }
-            // Reset en passant every move.
-            self.en_passant_square = None;
 
-            if piece.piece_type == PieceType::Pawn {
-                // White pawn double move
-                if from_row == 6 && to_row == 4 {
-                    self.en_passant_square = Some((5, from_col));
-                }
-
-                // Black pawn double move
-                if from_row == 1 && to_row == 3 {
-                    self.en_passant_square = Some((2, from_col));
-                }
-            }
             match (piece.piece_color, piece.piece_type) {
                 (PieceColor::White, PieceType::King) => {
                     self.white_king_moved = true;
@@ -192,5 +182,54 @@ impl Position {
 
         self.board[from_row][from_col] = None;
         self.board[to_row][to_col] = piece;
+
+        // Promotion logic
+        if let Some(piece) = piece {
+            if piece.piece_type == PieceType::Pawn {
+                match piece.piece_color {
+                    PieceColor::White => {
+                        if to_row == 0 {
+                            self.promotion = Some((to_row, to_col));
+                        }
+                    }
+
+                    PieceColor::Black => {
+                        if to_row == 7 {
+                            self.promotion = Some((to_row, to_col));
+                        }
+                    }
+                }
+            }
+        }
+
+        // En passant is only available for the next move.
+        self.en_passant_square = None;
+
+        if let Some(piece) = piece {
+            if piece.piece_type == PieceType::Pawn {
+                // White pawn double move
+                if from_row == 6 && to_row == 4 {
+                    self.en_passant_square = Some((5, from_col));
+                }
+
+                // Black pawn double move
+                if from_row == 1 && to_row == 3 {
+                    self.en_passant_square = Some((2, from_col));
+                }
+            }
+        }
+    }
+
+    pub fn promote(&mut self, piece_type: PieceType) {
+        if let Some((row, col)) = self.promotion {
+            let pawn = self.board[row][col].unwrap();
+
+            self.board[row][col] = Some(Piece {
+                piece_type,
+                piece_color: pawn.piece_color,
+            });
+
+            self.promotion = None;
+        }
     }
 }
